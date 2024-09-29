@@ -47,13 +47,13 @@ func (us *UserService) Register(ctx context.Context, user *models.User) (*models
 
 func (us *UserService) GetUserInfo(ctx context.Context, id uint) (*models.User, error) {
 
-	user, err := us.repo.GetUserById(ctx, id)
+	// user, err :=
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return user, nil
+	return us.repo.GetUserById(ctx, id)
 }
 
 func (us *UserService) GetUserFriends(ctx context.Context, id uint) ([]models.User, error) {

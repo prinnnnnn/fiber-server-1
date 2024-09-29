@@ -40,7 +40,7 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *models.User) (*m
 func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.User, error) {
 
 	var user models.User
-	result := ur.db.First(&user, id)
+	result := ur.db.WithContext(ctx).First(&user, id)
 
 	if result.Error != nil {
 		return nil, result.Error

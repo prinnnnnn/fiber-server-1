@@ -1,8 +1,50 @@
 package http
 
 import (
+	"context"
 	"fiber-server-1/internal/core/port"
+	"net/http"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
 )
+
+type Ctx struct {
+	fiber.Ctx
+	ctx context.Context
+}
+
+// Done implements context.Context.
+func (c *Ctx) Done() <-chan struct{} {
+	if c.ctx != nil {
+		return c.ctx.Done()
+	}
+	return nil
+}
+
+// Err implements context.Context.
+func (c *Ctx) Err() error {
+	if c.ctx != nil {
+		return c.ctx.Err()
+	}
+	return nil
+}
+
+// Value implements context.Context.
+func (c *Ctx) Value(key any) any {
+	if c.ctx != nil {
+		return c.ctx.Value(key)
+	}
+	return c.Locals(key.(string))
+}
+
+// Deadline implements context.Context.
+func (c *Ctx) Deadline() (deadline time.Time, ok bool) {
+	if c.ctx != nil {
+		return c.ctx.Deadline()
+	}
+	return time.Time{}, false
+}
 
 type UserHandler struct {
 	svc port.UserService
@@ -25,7 +67,7 @@ type RegisterUserRequest struct {
 
 // type Context =
 
-func (uh *UserHandler) Register() {
+func (uh *UserHandler) Register(ctx *fiber.Ctx) error {
 
 	// var body *RegisterUserRequest
 
@@ -55,40 +97,35 @@ func (uh *UserHandler) Register() {
 	// }
 
 	// ctx.JSON(http.StatusOK, user)
+	return nil
 
 }
 
-func (uh *UserHandler) GetUserInfo() {
+func (uh *UserHandler) GetUserInfo(ctx *fiber.Ctx) error {
 
-	// parsedId, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	userId, err := ctx.ParamsInt("id")
 
-	// if err != nil {
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-	// 		"error": err.Error(),
-	// 	})
-	// 	return
-	// }
+	if err != nil {
+		ctx.Status(http.StatusBadRequest).SendString("A parameter named 'id' is not provided")
+		return nil
+	}
 
-	// id := uint(parsedId)
+	customCtx := Ctx{
+		Ctx: *ctx,
+		ctx: context.Background(),
+	}
+	user, err := uh.svc.GetUserInfo(&customCtx, uint(userId))
 
-	// errChan := make(chan error, 1)
-	// userChan := make(chan *models.User, 1)
+	if err != nil {
+		ctx.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
+		return err
+	}
 
-	// var user *models.User
-	// go uh.svc.GetUserInfo(ctx, id)
-
-	// select {
-	// case err := <-errChan:
-	// 	ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-	// 		"error": err.Error(),
-	// 	})
-	// case user = <-userChan:
-	// 	ctx.JSON(http.StatusOK, user)
-	// }
-
+	ctx.Status(fiber.StatusOK).JSON(user)
+	return nil
 }
 
-func (uh *UserHandler) GetUserFriends() {
+func (uh *UserHandler) GetUserFriends(ctx *fiber.Ctx) error {
 
 	// parsedId, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 
@@ -111,10 +148,11 @@ func (uh *UserHandler) GetUserFriends() {
 	// }
 
 	// ctx.JSON(http.StatusOK, friends)
+	return nil
 
 }
 
-func (uh *UserHandler) AddRemoveFriend() {
+func (uh *UserHandler) AddRemoveFriend(ctx *fiber.Ctx) error {
 
 	// parsedId, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 
@@ -148,5 +186,6 @@ func (uh *UserHandler) AddRemoveFriend() {
 	// }
 
 	// ctx.JSON(http.StatusOK, friends)
+	return nil
 
 }

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"fiber-server-1/internal/adapter/config"
+	"fiber-server-1/internal/adapter/database"
+	"fiber-server-1/internal/adapter/http"
+	"fiber-server-1/internal/core/repository"
+	"fiber-server-1/internal/core/service"
 	"fmt"
 	"os"
-	"server_v2/internal/adapter/config"
-	"server_v2/internal/adapter/database"
-	"server_v2/internal/adapter/http"
-	"server_v2/internal/core/repository"
-	"server_v2/internal/core/service"
 )
 
 func main() {

@@ -2,47 +2,60 @@ package http
 
 import (
 	"fiber-server-1/internal/adapter/config"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type Router struct {
+	*fiber.App
 }
 
 func CreateRouter(
+
 	config *config.HTTP,
 	userHandler UserHandler,
+
 ) *Router {
 
-	// if config.Env == "production" {
-	// 	gin.SetMode(gin.ReleaseMode)
-	// }
+	/* Init Fiber App */
+	app := fiber.New(fiber.Config{
+		Prefork:       false,
+		CaseSensitive: true,
+		StrictRouting: true,
+		ServerHeader:  "Fiber",
+		AppName:       "Server-v1",
+	})
 
 	/* CORS */
-	// ginConfig := cors.DefaultConfig()
-	// allowedOrigins := config.AllowedOrigins
-	// originsList := strings.Split(allowedOrigins, ",")
-	// ginConfig.AllowOrigins = originsList
+	// app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: config.AllowedOrigins,
+	}))
 
-	// router := gin.New()
+	/* App logger */
+	app.Use(logger.New())
 	// router.Use(gin.Logger(), gin.Recovery(), cors.New(ginConfig))
 
 	/* Custom validators */
 
 	/* Define routes */
-	user := router.Group("/users")
+	user := app.Group("/users")
 	{
-		user.POST("/", userHandler.Register)
-		user.GET("/:id", userHandler.GetUserInfo)
-		user.GET("/:id/friends", userHandler.GetUserFriends)
-		user.PATCH("/:id/:friendId", userHandler.AddRemoveFriend)
+		user.Post("/", userHandler.Register)
+		user.Get("/:id", userHandler.GetUserInfo)
+		user.Get("/:id/friends", userHandler.GetUserFriends)
+		user.Patch("/:id/:friendId", userHandler.AddRemoveFriend)
 	}
 
 	return &Router{
-		router,
+		app,
 	}
 
 }
 
 /* Serve */
 func (r *Router) Serve(addr string) error {
-	return r.Run(addr)
+	return r.Listen(addr)
 }
