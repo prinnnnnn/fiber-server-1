@@ -16,6 +16,7 @@ func CreateRouter(
 
 	config *config.HTTP,
 	userHandler UserHandler,
+	postHandler PostHandler,
 
 ) *Router {
 
@@ -38,13 +39,21 @@ func CreateRouter(
 
 	/* Custom validators */
 
-	/* Define routes */
+	/* Define user routes */
 	user := app.Group("/users")
 	{
 		user.Post("/", userHandler.Register)
 		user.Get("/:id", userHandler.GetUserInfo)
 		user.Get("/:id/friends", userHandler.GetUserFriends)
 		user.Patch("/:id/:friendId", userHandler.AddRemoveFriend)
+	}
+
+	/* Define post routes */
+	post := app.Group("/posts")
+	{
+		post.Post("/", postHandler.CreateNewPost)
+		post.Get("/:id", postHandler.GetPostInfo)
+		post.Get("/:userId/posts", postHandler.GetUsersPosts)
 	}
 
 	return &Router{

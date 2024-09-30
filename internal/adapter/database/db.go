@@ -30,6 +30,7 @@ func ConnectDB(ctx *context.Context, config *config.DB) (*gorm.DB, error) {
 	// Create Table
 	db.AutoMigrate(&models.User{})
 	db.AutoMigrate(&models.Friendship{})
+	db.AutoMigrate(&models.Post{})
 
 	return db, nil
 }

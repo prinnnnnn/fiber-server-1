@@ -2,7 +2,6 @@ package http
 
 import (
 	"fiber-server-1/internal/core/port"
-	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -65,7 +64,7 @@ func (uh *UserHandler) GetUserInfo(ctx *fiber.Ctx) error {
 	userId, err := ctx.ParamsInt("id")
 
 	if err != nil {
-		ctx.Status(http.StatusBadRequest).SendString("A parameter named 'id' is not provided")
+		ctx.Status(fiber.ErrBadRequest.Code).SendString("A parameter named 'id' is not provided")
 		return err
 	}
 
