@@ -29,14 +29,12 @@ func CreateRouter(
 	})
 
 	/* CORS */
-	// app.Use(cors.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: config.AllowedOrigins,
 	}))
 
 	/* App logger */
 	app.Use(logger.New())
-	// router.Use(gin.Logger(), gin.Recovery(), cors.New(ginConfig))
 
 	/* Custom validators */
 

@@ -47,27 +47,17 @@ func (us *UserService) Register(ctx context.Context, user *models.User) (*models
 
 func (us *UserService) GetUserInfo(ctx context.Context, id uint) (*models.User, error) {
 
-	// user, err :=
-
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return us.repo.GetUserById(ctx, id)
 }
 
 func (us *UserService) GetUserFriends(ctx context.Context, id uint) ([]models.User, error) {
 
-	friendsList, err := us.repo.GetUserFriends(ctx, id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return friendsList, nil
+	return us.repo.GetUserFriends(ctx, id)
 
 }
 
 func (us *UserService) AddRemoveFriend(ctx context.Context, id uint, freindId uint) ([]models.User, error) {
+
 	return us.repo.ToggleFriendStatus(ctx, id, freindId)
+
 }
