@@ -15,11 +15,11 @@ type GormModel struct {
 /* Full User atrributes */
 type User struct {
 	GormModel
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
-	Email         string `json:"email" gorm:"unique"`
-	Password      string `json:"password"`
-	PicturePath   string `json:"picturePath"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email" gorm:"unique"`
+	Password  string `json:"password"`
+	// PicturePath   string `json:"picturePath"`
 	Location      string `json:"location"`
 	Occupation    string `json:"occupation"`
 	ViewedProfile int    `json:"viewedProfile"`
@@ -29,10 +29,10 @@ type User struct {
 /* User for Response (exclude password */
 type UserResponse struct {
 	GormModel
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
-	Email         string `json:"email" gorm:"unique"`
-	PicturePath   string `json:"picturePath"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email" gorm:"unique"`
+	// PicturePath   string `json:"picturePath"`
 	Location      string `json:"location"`
 	Occupation    string `json:"occupation"`
 	ViewedProfile int    `json:"viewedProfile"`
@@ -61,11 +61,11 @@ func (f *Friendship) BeforeCreate(tx *gorm.DB) error {
 
 func MapToResponse(user *User) *UserResponse {
 	return &UserResponse{
-		GormModel:     user.GormModel,
-		FirstName:     user.FirstName,
-		LastName:      user.LastName,
-		Email:         user.Email,
-		PicturePath:   user.PicturePath,
+		GormModel: user.GormModel,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		// PicturePath:   user.PicturePath,
 		Location:      user.Location,
 		Occupation:    user.Occupation,
 		ViewedProfile: user.ViewedProfile,

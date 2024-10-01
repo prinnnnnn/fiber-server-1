@@ -16,7 +16,7 @@ func CreateRouter(
 
 	config *config.HTTP,
 	userHandler UserHandler,
-	postHandler PostHandler,
+	// postHandler PostHandler,
 
 ) *Router {
 
@@ -49,12 +49,12 @@ func CreateRouter(
 	}
 
 	/* Define post routes */
-	post := app.Group("/posts")
-	{
-		post.Post("/", postHandler.CreateNewPost)
-		post.Get("/:id", postHandler.GetPostInfo)
-		post.Get("/:userId/posts", postHandler.GetUsersPosts)
-	}
+	// post := app.Group("/posts")
+	// {
+	// 	post.Post("/", postHandler.CreateNewPost)
+	// 	post.Get("/:id", postHandler.GetPostInfo)
+	// 	post.Get("/:userId/posts", postHandler.GetUsersPosts)
+	// }
 
 	return &Router{
 		app,

@@ -3,34 +3,33 @@ package database
 import (
 	"context"
 	"fiber-server-1/internal/adapter/config"
-	"fiber-server-1/internal/core/models"
 	"fmt"
+	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func ConnectDB(ctx *context.Context, config *config.DB) (*gorm.DB, error) {
+func ConnectDB(ctx *context.Context, config *config.DB) (*pgxpool.Pool, error) {
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai",
-		config.Connection,
-		config.User,
-		config.Password,
-		config.Name,
-		config.Port,
-	)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", config.User, config.Password, config.Connection, config.Port, config.Name)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
+	poolConfig, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		fmt.Println(dsn)
-		return nil, err
+		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 
-	// Create Table
-	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Friendship{})
-	db.AutoMigrate(&models.Post{})
+	// Set pool size (MaxConns defines the pool size)
+	poolConfig.MaxConns = 20                      // Maximum number of connections in the pool
+	poolConfig.MinConns = 5                       // Minimum number of idle connections in the pool
+	poolConfig.MaxConnIdleTime = 15 * time.Minute // Time before idle connections are closed
+	poolConfig.MaxConnLifetime = 2 * time.Hour    // Maximum lifetime for a connection
 
-	return db, nil
+	// Create the pool
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+	}
+
+	return dbPool, nil
+
 }

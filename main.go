@@ -38,11 +38,11 @@ func main() {
 	userHandler := http.NewUserHandler(userService)
 
 	// Post
-	postRepository := repository.NewPostRepository(db)
-	postService := service.NewPostService(postRepository)
-	postHandler := http.NewPostHandler(postService)
+	// postRepository := repository.NewPostRepository(db)
+	// postService := service.NewPostService(postRepository)
+	// postHandler := http.NewPostHandler(postService)
 
-	router := http.CreateRouter(config.HTTP, *userHandler, *postHandler)
+	router := http.CreateRouter(config.HTTP, *userHandler)
 
 	listenAddr := fmt.Sprintf("%s:%s", config.HTTP.URL, config.HTTP.Port)
 	fmt.Printf("Starting the HTTP server at %s\n", listenAddr)
