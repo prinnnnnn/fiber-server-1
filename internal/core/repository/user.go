@@ -25,7 +25,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	}
 }
 
-func (ur *UserRepository) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
+func (ur *UserRepository) CreateUser(ctx context.Context, user *models.User) (*models.UserResponse, error) {
 
 	result := ur.db.Create(user)
 
@@ -33,11 +33,11 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *models.User) (*m
 		return nil, result.Error
 	}
 
-	return user, nil
+	return models.MapToResponse(user), nil
 
 }
 
-func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.User, error) {
+func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.UserResponse, error) {
 
 	var user models.User
 	result := ur.db.WithContext(ctx).First(&user, id)
@@ -46,37 +46,36 @@ func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.Use
 		return nil, result.Error
 	}
 
-	return &user, nil
+	return models.MapToResponse(&user), nil
 
 }
 
-func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models.User, error) {
+func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models.UserResponse, error) {
 	var friendships []models.Friendship
 
-	result := ur.db.Preload("User1").Preload("User2").
+	result := ur.db.
 		Where("user_id1 = ? OR user_id2 = ?", id, id).
+		Preload("User1").
+		Preload("User2").
 		Find(&friendships)
 
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	userFriends := make([]models.User, 0)
-
+	userFriends := make([]models.UserResponse, 0, len(friendships))
 	for _, fsh := range friendships {
-		freind := fsh.User1
-
-		if freind.ID == id {
-			freind = fsh.User2
+		if fsh.UserID1 == id {
+			userFriends = append(userFriends, *models.MapToResponse(&fsh.User2))
+		} else {
+			userFriends = append(userFriends, *models.MapToResponse(&fsh.User2))
 		}
-
-		userFriends = append(userFriends, freind)
 	}
 
 	return userFriends, nil
 }
 
-func (ur *UserRepository) ToggleFriendStatus(ctx context.Context, id, friendId uint) ([]models.User, error) {
+func (ur *UserRepository) ToggleFriendStatus(ctx context.Context, id, friendId uint) ([]models.UserResponse, error) {
 
 	friendship, err := ur.getFriendship(id, friendId)
 

@@ -8,23 +8,23 @@ import (
 type UserRepository interface {
 
 	/* Create a new user */
-	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
+	CreateUser(ctx context.Context, user *models.User) (*models.UserResponse, error)
 	/* Get a user's info*/
-	GetUserById(ctx context.Context, id uint) (*models.User, error)
+	GetUserById(ctx context.Context, id uint) (*models.UserResponse, error)
 	/* Get a user's friends */
-	GetUserFriends(ctx context.Context, id uint) ([]models.User, error)
+	GetUserFriends(ctx context.Context, id uint) ([]models.UserResponse, error)
 	/* Update friendship status between users */
-	ToggleFriendStatus(ctx context.Context, id, freindId uint) ([]models.User, error)
+	ToggleFriendStatus(ctx context.Context, id, freindId uint) ([]models.UserResponse, error)
 }
 
 type UserService interface {
 
 	/* Register a new user */
-	Register(ctx context.Context, user *models.User) (*models.User, error)
+	Register(ctx context.Context, user *models.User) (*models.UserResponse, error)
 	/* Get user info with the specified ID */
-	GetUserInfo(ctx context.Context, id uint) (*models.User, error)
+	GetUserInfo(ctx context.Context, id uint) (*models.UserResponse, error)
 	/* Get all friends of a particular user */
-	GetUserFriends(ctx context.Context, id uint) ([]models.User, error)
+	GetUserFriends(ctx context.Context, id uint) ([]models.UserResponse, error)
 	/* Add/Remove friend */
-	AddRemoveFriend(ctx context.Context, id, freindId uint) ([]models.User, error)
+	AddRemoveFriend(ctx context.Context, id, freindId uint) ([]models.UserResponse, error)
 }

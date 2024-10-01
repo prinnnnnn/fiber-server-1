@@ -20,7 +20,7 @@ func NewUserService(repo port.UserRepository) *UserService {
 	}
 }
 
-func (us *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
+func (us *UserService) Register(ctx context.Context, user *models.User) (*models.UserResponse, error) {
 
 	saltRound := 6
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), saltRound)
@@ -39,24 +39,22 @@ func (us *UserService) Register(ctx context.Context, user *models.User) (*models
 		return nil, err
 	}
 
-	newUser.Password = ""
-
 	return newUser, nil
 
 }
 
-func (us *UserService) GetUserInfo(ctx context.Context, id uint) (*models.User, error) {
+func (us *UserService) GetUserInfo(ctx context.Context, id uint) (*models.UserResponse, error) {
 
 	return us.repo.GetUserById(ctx, id)
 }
 
-func (us *UserService) GetUserFriends(ctx context.Context, id uint) ([]models.User, error) {
+func (us *UserService) GetUserFriends(ctx context.Context, id uint) ([]models.UserResponse, error) {
 
 	return us.repo.GetUserFriends(ctx, id)
 
 }
 
-func (us *UserService) AddRemoveFriend(ctx context.Context, id uint, freindId uint) ([]models.User, error) {
+func (us *UserService) AddRemoveFriend(ctx context.Context, id uint, freindId uint) ([]models.UserResponse, error) {
 
 	return us.repo.ToggleFriendStatus(ctx, id, freindId)
 

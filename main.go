@@ -26,7 +26,7 @@ func main() {
 	db, err := database.ConnectDB(&ctx, config.DB)
 
 	if err != nil {
-		fmt.Println("Error connecting to database: %s\n", err.Error())
+		fmt.Println("Error connecting to database")
 		os.Exit(1)
 	}
 
