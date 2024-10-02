@@ -71,8 +71,10 @@ func (uh *UserHandler) GetUserInfo(ctx *fiber.Ctx) error {
 	user, err := uh.svc.GetUserInfo(NewContext(ctx), uint(userId))
 
 	if err != nil {
-		ctx.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
-		return err
+		// code := errorStatusMap[err]
+		// fmt.Printf("error %d\n", code)
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
 	}
 
 	ctx.Status(fiber.StatusOK).JSON(user)
@@ -91,8 +93,10 @@ func (uh *UserHandler) GetUserFriends(ctx *fiber.Ctx) error {
 	friends, err := uh.svc.GetUserFriends(NewContext(ctx), uint(userId))
 
 	if err != nil {
-		ctx.Status(fiber.ErrInternalServerError.Code).SendString(err.Error())
-		return err
+		// code := errorStatusMap[err]
+		// fmt.Printf("error %d\n", code)
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
 	}
 
 	ctx.Status(fiber.StatusOK).JSON(friends)
@@ -119,8 +123,10 @@ func (uh *UserHandler) AddRemoveFriend(ctx *fiber.Ctx) error {
 	friends, err := uh.svc.AddRemoveFriend(NewContext(ctx), uint(userId), uint(friendId))
 
 	if err != nil {
-		ctx.Status(fiber.ErrInternalServerError.Code).SendString("Fail to fetch data")
-		return err
+		// code := errorStatusMap[err]
+		// fmt.Printf("error %d\n", code)
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
 	}
 
 	ctx.Status(fiber.StatusOK).JSON(friends)

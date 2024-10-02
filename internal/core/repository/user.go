@@ -9,9 +9,7 @@ and provide an access to the postgres database
 
 import (
 	"context"
-	"errors"
 	"fiber-server-1/internal/core/models"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -46,11 +44,11 @@ func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.Use
 
 		// handle not found
 		if err == pgx.ErrNoRows {
-			return nil, errors.New("user not found")
+			return nil, models.ErrDataNotFound
 		}
 
 		// Other errors
-		return nil, fmt.Errorf("could not fetch user: %w", err)
+		return nil, models.ErrInternalServer
 	}
 
 	return models.MapToResponse(&user), nil
@@ -69,7 +67,7 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 
 	rows, err := ur.db.Query(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch friendships: %w", err)
+		return nil, models.ErrInternalServer
 	}
 	defer rows.Close()
 
@@ -77,13 +75,13 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 	for rows.Next() {
 		var friendship models.Friendship
 		if err := rows.Scan(&friendship.UserID1, &friendship.UserID2); err != nil {
-			return nil, fmt.Errorf("could not scan friendship: %w", err)
+			return nil, models.ErrInternalServer
 		}
 		friendships = append(friendships, friendship)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error reading friendship rows: %w", err)
+		return nil, models.ErrInternalServer
 	}
 
 	userFriends := make([]models.UserResponse, 0, len(friendships))
@@ -156,9 +154,9 @@ func (ur *UserRepository) getFriendship(ctx context.Context, userID1, userID2 ui
 	if err != nil {
 		// Handle the "not found" case
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, models.ErrDataNotFound
 		}
-		return nil, fmt.Errorf("could not fetch friendships: %w", err)
+		return nil, models.ErrInternalServer
 	}
 
 	return &friendship, nil
@@ -173,7 +171,7 @@ func (ur *UserRepository) createFriendship(ctx context.Context, userID1, userID2
 
 	_, err := ur.db.Exec(ctx, query, userID1, userID2)
 	if err != nil {
-		return fmt.Errorf("could not create friendship: %w", err)
+		return models.ErrInternalServer
 	}
 
 	return nil
@@ -188,11 +186,11 @@ func (ur *UserRepository) deleteFriendship(ctx context.Context, userID1, userID2
 
 	result, err := ur.db.Exec(ctx, query, userID1, userID2)
 	if err != nil {
-		return fmt.Errorf("could not delete friendship: %w", err)
+		return models.ErrInternalServer
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("friendship not found")
+		return models.ErrDataNotFound
 	}
 
 	return nil
