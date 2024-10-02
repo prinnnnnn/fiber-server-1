@@ -9,6 +9,7 @@ and provide an access to the postgres database
 
 import (
 	"context"
+	"errors"
 	"fiber-server-1/internal/core/models"
 	"fmt"
 
@@ -16,11 +17,9 @@ import (
 )
 
 type UserRepository struct {
-	// db *gorm.DB
 	db *pgxpool.Pool
 }
 
-// func NewUserRepository(db *gorm.DB) *UserRepository {
 func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{
 		db,
@@ -28,12 +27,6 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 }
 
 func (ur *UserRepository) CreateUser(ctx context.Context, user *models.User) (*models.UserResponse, error) {
-
-	// result := ur.db.Create(user)
-
-	// if result.Error != nil {
-	// 	return nil, result.Error
-	// }
 
 	return models.MapToResponse(user), nil
 
@@ -44,14 +37,20 @@ func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.Use
 	var user models.User
 	query := `SELECT * FROM users WHERE id = $1`
 
-	// Execute the query with named arguments to fetch the book details from the database.
+	// Execute the query with named arguments to fetch the user details from the database.
 	err := ur.db.QueryRow(ctx, query, id).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt, &user.FirstName,
 		&user.LastName, &user.Email, &user.Password, &user.Location,
 		&user.Occupation, &user.ViewedProfile, &user.Impressions)
 
 	if err != nil {
-		fmt.Println("Error Fetching User Info")
-		return nil, err
+
+		// handle not found
+		if err.Error() == "no rows in result set" {
+			return nil, errors.New("user not found")
+		}
+
+		// Other errors
+		return nil, fmt.Errorf("could not fetch user: %w", err)
 	}
 
 	return models.MapToResponse(&user), nil
@@ -115,66 +114,92 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 
 func (ur *UserRepository) ToggleFriendStatus(ctx context.Context, id, friendId uint) ([]models.UserResponse, error) {
 
-	// friendship, err := ur.getFriendship(id, friendId)
+	friendship, err := ur.getFriendship(ctx, id, friendId)
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		return nil, err
+	}
 
-	// if friendship != nil {
-	// 	// They're friends => remove
-	// 	err := ur.deleteFriendship(id, friendId)
+	if friendship != nil {
+		// They're friends => remove
+		// fmt.Println("Deleting friendship...")
+		err := ur.deleteFriendship(ctx, id, friendId)
 
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
+		if err != nil {
+			return nil, err
+		}
 
-	// } else {
-	// 	// They are not friends => add
-	// 	err := ur.createFriendship(id, friendId)
+	} else {
+		// They are not friends => add
+		// fmt.Println("Creating friendship...")
+		err := ur.createFriendship(ctx, id, friendId)
 
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
+		if err != nil {
+			return nil, err
+		}
 
-	// }
+	}
 
 	return ur.GetUserFriends(ctx, id)
 
 }
 
 // GetFriendship checks if a friendship exists
-// func (ur *UserRepository) getFriendship(userID1, userID2 uint) (*models.Friendship, error) {
-// 	var friendship models.Friendship
-// 	result := ur.db.Where("(user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?)",
-// 		userID1, userID2, userID2, userID1).First(&friendship)
-// 	if result.Error != nil {
-// 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-// 			return nil, nil // Friendship doesn't exist
-// 		}
-// 		return nil, result.Error
-// 	}
-// 	return &friendship, nil
-// }
+func (ur *UserRepository) getFriendship(ctx context.Context, userID1, userID2 uint) (*models.Friendship, error) {
+	var friendship models.Friendship
 
-// func (ur *UserRepository) createFriendship(userID1, userID2 uint) error {
-// 	friendship := models.Friendship{
-// 		UserID1: userID1,
-// 		UserID2: userID2,
-// 	}
-// 	return ur.db.Create(&friendship).Error
-// }
+	query := `
+		SELECT user_id1, user_id2 
+        FROM friendships 
+        WHERE (user_id1 = $1 AND user_id2 = $2) OR (user_id2 = $1 AND user_id1 = $2);
+	`
 
-// func (ur *UserRepository) deleteFriendship(userID1, userID2 uint) error {
+	row := ur.db.QueryRow(ctx, query, userID1, userID2)
+	err := row.Scan(&friendship.UserID1, &friendship.UserID2)
 
-// 	result := ur.db.Where("(user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?)",
-// 		userID1, userID2, userID2, userID1).Delete(&models.Friendship{})
+	if err != nil {
+		// Handle the "not found" case
+		if err.Error() == "no rows in result set" {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("could not fetch friendships: %w", err)
+	}
 
-// 	if result.Error != nil {
-// 		return result.Error
-// 	}
-// 	if result.RowsAffected == 0 {
-// 		return errors.New("friendship not found")
-// 	}
-// 	return nil
-// }
+	return &friendship, nil
+}
+
+func (ur *UserRepository) createFriendship(ctx context.Context, userID1, userID2 uint) error {
+	// Define the SQL insert query
+	query := `
+		INSERT INTO friendships (user_id1, user_id2)
+		VALUES ($1, $2)
+	`
+
+	// Execute the insert query
+	_, err := ur.db.Exec(ctx, query, userID1, userID2)
+	if err != nil {
+		return fmt.Errorf("could not create friendship: %w", err)
+	}
+
+	return nil
+}
+
+func (ur *UserRepository) deleteFriendship(ctx context.Context, userID1, userID2 uint) error {
+
+	query := `
+		DELETE FROM friendships
+		WHERE (user_id1 = $1 AND user_id2 = $2) OR (user_id1 = $2 AND user_id2 = $1)
+	`
+	// Execute the delete query
+	result, err := ur.db.Exec(ctx, query, userID1, userID2)
+	if err != nil {
+		return fmt.Errorf("could not delete friendship: %w", err)
+	}
+
+	// Check if any row was affected (deleted)
+	if result.RowsAffected() == 0 {
+		return errors.New("friendship not found")
+	}
+
+	return nil
+}
