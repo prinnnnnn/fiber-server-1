@@ -35,8 +35,8 @@ func (ph *PostHandler) GetPostInfo(ctx *fiber.Ctx) error {
 	post, err := ph.ps.GetPostInfo(NewContext(ctx), uint(postId))
 
 	if err != nil {
-		ctx.Status(fiber.ErrInternalServerError.Code).SendString("Error at server!")
-		return err
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
 	}
 
 	ctx.Status(fiber.StatusOK).JSON(post)
@@ -45,5 +45,21 @@ func (ph *PostHandler) GetPostInfo(ctx *fiber.Ctx) error {
 }
 
 func (ph *PostHandler) GetUsersPosts(ctx *fiber.Ctx) error {
+	userId, err := ctx.ParamsInt("userId")
+
+	if err != nil {
+		ctx.Status(fiber.ErrBadRequest.Code).SendString("Parameter is not provided")
+		return err
+	}
+
+	posts, err := ph.ps.GetPostsByUser(NewContext(ctx), uint(userId))
+
+	if err != nil {
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
+	}
+
+	ctx.Status(fiber.StatusOK).JSON(posts)
+
 	return nil
 }

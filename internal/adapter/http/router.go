@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	// "github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type Router struct {
@@ -16,7 +16,7 @@ func CreateRouter(
 
 	config *config.HTTP,
 	userHandler UserHandler,
-	// postHandler PostHandler,
+	postHandler PostHandler,
 
 ) *Router {
 
@@ -35,7 +35,7 @@ func CreateRouter(
 	}))
 
 	/* App logger */
-	app.Use(logger.New())
+	// app.Use(logger.New())
 
 	/* Custom validators */
 
@@ -49,12 +49,12 @@ func CreateRouter(
 	}
 
 	/* Define post routes */
-	// post := app.Group("/posts")
-	// {
-	// 	post.Post("/", postHandler.CreateNewPost)
-	// 	post.Get("/:id", postHandler.GetPostInfo)
-	// 	post.Get("/:userId/posts", postHandler.GetUsersPosts)
-	// }
+	post := app.Group("/posts")
+	{
+		// post.Post("/", postHandler.CreateNewPost)
+		post.Get("/:id", postHandler.GetPostInfo)
+		post.Get("/:userId/posts", postHandler.GetUsersPosts)
+	}
 
 	return &Router{
 		app,

@@ -10,6 +10,7 @@ and provide an access to the postgres database
 import (
 	"context"
 	"fiber-server-1/internal/core/models"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -73,11 +74,13 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 
 	// Iterate rows for each friendships
 	for rows.Next() {
+
 		var friendship models.Friendship
 		if err := rows.Scan(&friendship.UserID1, &friendship.UserID2); err != nil {
 			return nil, models.ErrInternalServer
 		}
 		friendships = append(friendships, friendship)
+
 	}
 
 	if err := rows.Err(); err != nil {
@@ -86,24 +89,53 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 
 	userFriends := make([]models.UserResponse, 0, len(friendships))
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	var friendId uint
 	for _, fsh := range friendships {
 
-		if fsh.UserID1 == id {
-			friendId = fsh.UserID2
-		} else {
-			friendId = fsh.UserID1
-		}
+		fsh_ := fsh
 
-		user, err := ur.GetUserById(ctx, friendId)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		if err != nil {
-			return nil, err
-		}
+			if fsh_.UserID1 == id {
+				friendId = fsh_.UserID2
+			} else {
+				friendId = fsh_.UserID1
+			}
 
-		userFriends = append(userFriends, *user)
+			user, err := ur.GetUserById(ctx, friendId)
+
+			if err != nil {
+				return
+			}
+
+			mu.Lock()
+			userFriends = append(userFriends, *user)
+			mu.Unlock()
+
+		}()
+
+		// if fsh.UserID1 == id {
+		// 	friendId = fsh.UserID2
+		// } else {
+		// 	friendId = fsh.UserID1
+		// }
+
+		// user, err := ur.GetUserById(ctx, friendId)
+
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// userFriends = append(userFriends, *user)
 
 	}
+
+	wg.Wait()
 
 	return userFriends, nil
 }

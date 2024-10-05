@@ -3,16 +3,16 @@ package repository
 import (
 	"context"
 	"fiber-server-1/internal/core/models"
-	"sync"
 
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostRepository struct {
-	db *gorm.DB
+	db *pgxpool.Pool
 }
 
-func NewPostRepository(db *gorm.DB) *PostRepository {
+func NewPostRepository(db *pgxpool.Pool) *PostRepository {
 	return &PostRepository{
 		db,
 	}
@@ -27,10 +27,22 @@ func (pr *PostRepository) CreatePost(ctx context.Context, Post *models.Post) (*m
 func (pr *PostRepository) GetPostById(ctx context.Context, id uint) (*models.Post, error) {
 
 	var post models.Post
-	result := pr.db.WithContext(ctx).First(&post, id)
+	query := `SELECT * FROM posts WHERE id = $1`
 
-	if result.Error != nil {
-		return nil, result.Error
+	err := pr.db.QueryRow(ctx, query, id).Scan(
+		&post.ID, &post.CreatedAt,
+		&post.CreatedAt, &post.UserID,
+		&post.FirstName, &post.LastName,
+		&post.PicturePath, &post.Description,
+	)
+
+	if err != nil {
+
+		if err == pgx.ErrNoRows {
+			return nil, models.ErrDataNotFound
+		}
+
+		return nil, models.ErrInternalServer
 	}
 
 	return &post, nil
@@ -40,41 +52,36 @@ func (pr *PostRepository) GetPostById(ctx context.Context, id uint) (*models.Pos
 /* Get all posts of a user */
 func (pr *PostRepository) GetPostsByUserId(ctx context.Context, userId uint) ([]models.Post, error) {
 
-	var userIds []struct {
-		postId uint
-		userId uint
+	query := `
+		SELECT * FROM posts WHERE user_id = $1
+	`
+
+	rows, err := pr.db.Query(ctx, query, userId)
+	if err != nil {
+		return nil, models.ErrInternalServer
 	}
+	defer rows.Close()
 
-	result := pr.db.Model(&models.Post{}).Select("id, user_id").Find(&userIds)
+	var posts []models.Post
+	// var wg sync.WaitGroup
+	// var mu sync.Mutex
 
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	posts := make([]models.Post, 0)
-
-	for _, row := range userIds {
-		if row.userId == userId {
-			wg.Add(1)
-			go func(id uint) {
-				defer wg.Done()
-
-				var post models.Post
-				if err := pr.db.First(&post, id).Error; err != nil {
-					return
-				}
-
-				mu.Lock()
-				posts = append(posts, post)
-				mu.Unlock()
-
-			}(row.postId)
+	for rows.Next() {
+		var post models.Post
+		if err := rows.Scan(
+			&post.ID, &post.CreatedAt,
+			&post.CreatedAt, &post.UserID,
+			&post.FirstName, &post.LastName,
+			&post.PicturePath, &post.Description,
+		); err != nil {
+			return nil, models.ErrInternalServer
 		}
+		posts = append(posts, post)
 	}
 
-	wg.Wait()
+	if err := rows.Err(); err != nil {
+		return nil, models.ErrInternalServer
+	}
 
 	return posts, nil
 
