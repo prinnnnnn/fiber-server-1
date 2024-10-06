@@ -59,7 +59,6 @@ func (ur *UserRepository) GetUserById(ctx context.Context, id uint) (*models.Use
 func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models.UserResponse, error) {
 	var friendships []models.Friendship
 
-	// Select friendships where the user is either in user_id1 or user_id2
 	query := `
         SELECT user_id1, user_id2 
         FROM friendships 
@@ -70,68 +69,44 @@ func (ur *UserRepository) GetUserFriends(ctx context.Context, id uint) ([]models
 	if err != nil {
 		return nil, models.ErrInternalServer
 	}
+
 	defer rows.Close()
-
-	// Iterate rows for each friendships
-	for rows.Next() {
-
-		var friendship models.Friendship
-		if err := rows.Scan(&friendship.UserID1, &friendship.UserID2); err != nil {
-			return nil, models.ErrInternalServer
-		}
-		friendships = append(friendships, friendship)
-
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, models.ErrInternalServer
-	}
 
 	userFriends := make([]models.UserResponse, 0, len(friendships))
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	var friendId, friendId2 uint
 
-	var friendId uint
-	for _, fsh := range friendships {
+	for rows.Next() {
 
-		fsh_ := fsh
+		if err := rows.Scan(&friendId, &friendId2); err != nil {
+			return nil, models.ErrInternalServer
+		}
+
+		if friendId == id {
+			friendId = friendId2
+		}
 
 		wg.Add(1)
-		go func() {
+		go func(userId uint) {
 			defer wg.Done()
+			var user models.User
+			query := `SELECT * FROM users WHERE id = $1`
 
-			if fsh_.UserID1 == id {
-				friendId = fsh_.UserID2
-			} else {
-				friendId = fsh_.UserID1
-			}
-
-			user, err := ur.GetUserById(ctx, friendId)
+			err := ur.db.QueryRow(ctx, query, userId).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt, &user.FirstName,
+				&user.LastName, &user.Email, &user.Password, &user.Location,
+				&user.Occupation, &user.ViewedProfile, &user.Impressions)
 
 			if err != nil {
 				return
 			}
 
 			mu.Lock()
-			userFriends = append(userFriends, *user)
+			userFriends = append(userFriends, *models.MapToResponse(&user))
 			mu.Unlock()
 
-		}()
-
-		// if fsh.UserID1 == id {
-		// 	friendId = fsh.UserID2
-		// } else {
-		// 	friendId = fsh.UserID1
-		// }
-
-		// user, err := ur.GetUserById(ctx, friendId)
-
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// userFriends = append(userFriends, *user)
+		}(friendId)
 
 	}
 
