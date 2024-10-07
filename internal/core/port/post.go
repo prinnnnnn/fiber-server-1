@@ -14,7 +14,7 @@ type PostRepository interface {
 	/* Get Posts by userId */
 	GetPostsByUserId(ctx context.Context, userId uint) ([]models.Post, error)
 	/* Toggle like status of post by userId */
-	// ToggleFriendStatus(ctx context.Context, userId, postId uint) ([]models.Post, error)
+	LikePost(ctx context.Context, userId, postId uint) (*models.Post, error)
 }
 
 type PostService interface {
@@ -26,5 +26,5 @@ type PostService interface {
 	/* Get all Posts of a user (by userId) */
 	GetPostsByUser(ctx context.Context, userId uint) ([]models.Post, error)
 	/* Add/Remove friend */
-	// AddRemoveFriend(ctx context.Context, id, freindId uint) ([]models.Post, error)
+	AddRemoveFriend(ctx context.Context, id, freindId uint) (*models.Post, error)
 }

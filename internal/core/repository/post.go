@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fiber-server-1/internal/core/models"
 
 	"github.com/jackc/pgx/v5"
@@ -63,8 +64,6 @@ func (pr *PostRepository) GetPostsByUserId(ctx context.Context, userId uint) ([]
 	defer rows.Close()
 
 	var posts []models.Post
-	// var wg sync.WaitGroup
-	// var mu sync.Mutex
 
 	for rows.Next() {
 		var post models.Post
@@ -85,4 +84,93 @@ func (pr *PostRepository) GetPostsByUserId(ctx context.Context, userId uint) ([]
 
 	return posts, nil
 
+}
+
+func (pr *PostRepository) LikePost(ctx context.Context, userId, postId uint) (*models.Post, error) {
+
+	err := pr.getLikeRecord(ctx, userId, postId)
+
+	if errors.Is(err, models.ErrInternalServer) {
+		return nil, err
+	}
+
+	var post *models.Post
+
+	if errors.Is(err, models.ErrDataNotFound) {
+		// user did not like post
+		post, err = pr.likePost(ctx, userId, postId)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		// user liked post
+		post, err = pr.dislikePost(ctx, userId, postId)
+
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return post, nil
+
+}
+
+// GetFriendship checks if a friendship exists
+func (pr *PostRepository) getLikeRecord(ctx context.Context, userId, postId uint) error {
+	var like models.Like
+
+	query := `
+		SELECT user_id, post_id 
+        FROM likes 
+        WHERE (user_id = $1 AND post_id = $2);
+	`
+
+	row := pr.db.QueryRow(ctx, query, userId, postId)
+	err := row.Scan(&like.UserID, &like.PostID)
+
+	if err != nil {
+		// Handle the "not found" case
+		if err == pgx.ErrNoRows {
+			return models.ErrDataNotFound
+		}
+		return models.ErrInternalServer
+	}
+
+	return nil
+}
+
+func (pr *PostRepository) likePost(ctx context.Context, userId, postId uint) (*models.Post, error) {
+
+	query := `
+		INSERT INTO likes (user_id, post_id)
+		VALUES ($1, $2)
+	`
+
+	_, err := pr.db.Exec(ctx, query, userId, postId)
+	if err != nil {
+		return nil, models.ErrInternalServer
+	}
+
+	return pr.GetPostById(ctx, postId)
+}
+
+func (pr *PostRepository) dislikePost(ctx context.Context, userId, postId uint) (*models.Post, error) {
+
+	query := `
+		DELETE FROM likes
+		WHERE (user_id = $1 AND post_id = $2)
+	`
+
+	result, err := pr.db.Exec(ctx, query, userId, postId)
+	if errors.Is(err, models.ErrInternalServer) {
+		return nil, err
+	}
+
+	if result.RowsAffected() == 0 {
+		return nil, models.ErrDataNotFound
+	}
+
+	return pr.GetPostById(ctx, postId)
 }

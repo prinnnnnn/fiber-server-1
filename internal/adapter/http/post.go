@@ -63,3 +63,29 @@ func (ph *PostHandler) GetUsersPosts(ctx *fiber.Ctx) error {
 
 	return nil
 }
+
+func (ph *PostHandler) AddRemoveFriend(ctx *fiber.Ctx) error {
+
+	userId, err := ctx.ParamsInt("userId")
+	if err != nil {
+		ctx.Status(fiber.ErrBadRequest.Code).SendString("Parameter named 'userId' is not provided")
+		return err
+	}
+
+	postId, err := ctx.ParamsInt("postId")
+	if err != nil {
+		ctx.Status(fiber.ErrBadRequest.Code).SendString("Parameter named 'postId' is not provided")
+		return err
+	}
+
+	post, err := ph.ps.AddRemoveFriend(NewContext(ctx), uint(userId), uint(postId))
+
+	if err != nil {
+		ctx.Status(errorStatusMap[err]).SendString(err.Error())
+		return nil
+	}
+
+	ctx.Status(fiber.StatusOK).JSON(post)
+
+	return nil
+}

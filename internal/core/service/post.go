@@ -31,3 +31,7 @@ func (ps *PostService) GetPostInfo(ctx context.Context, id uint) (*models.Post, 
 func (ps *PostService) GetPostsByUser(ctx context.Context, userId uint) ([]models.Post, error) {
 	return ps.repo.GetPostsByUserId(ctx, userId)
 }
+
+func (ps *PostService) AddRemoveFriend(ctx context.Context, userId, postId uint) (*models.Post, error) {
+	return ps.repo.LikePost(ctx, userId, postId)
+}

@@ -9,6 +9,7 @@ and provide an access to the postgres database
 
 import (
 	"context"
+	"errors"
 	"fiber-server-1/internal/core/models"
 	"sync"
 
@@ -119,7 +120,7 @@ func (ur *UserRepository) ToggleFriendStatus(ctx context.Context, id, friendId u
 
 	friendship, err := ur.getFriendship(ctx, id, friendId)
 
-	if err != nil {
+	if errors.Is(err, models.ErrInternalServer) {
 		return nil, err
 	}
 
