@@ -5,7 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	// "github.com/goccy/go-json"
+	// "github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 type Router struct {
@@ -27,6 +28,7 @@ func CreateRouter(
 		StrictRouting: true,
 		ServerHeader:  "Fiber",
 		AppName:       "Server-v1",
+		// JSONEncoder: ,
 	})
 
 	/* CORS */
@@ -35,7 +37,7 @@ func CreateRouter(
 	}))
 
 	/* App logger */
-	app.Use(logger.New())
+	// app.Use(logger.New())
 
 	/* Custom validators */
 
